@@ -1,43 +1,28 @@
 <template>
-  <div class="list">
-    <ul>
-      <transition-group name="list">
-        <li :key="item.id" v-for="item in items">
-        <span :key="column"  v-for="column in columns">
-          {{ column }}: {{ item.data[column] }}
-        </span>
-        </li>
-      </transition-group>
-    </ul>
-  </div>
+  <stack :cards="rooms">
+    <template slot-scope="card">
+      <button @click="enter(card.card.id)">
+        {{ card.card.data.name }}
+      </button>
+    </template>
+  </stack>
 </template>
 
 <script>
+import Stack from './Stack'
 export default {
   name: 'List',
+  components: { Stack },
   props: {
-    items: Array
+    rooms: Array
   },
-  computed: {
-    columns () {
-      return this.$_.uniq(this.$_.flattenDeep(this.items.map(item => {
-        return Object.keys(item.data)
-      })))
+  methods: {
+    enter (id) {
+      this.$router.push(`/game/${id}`)
     }
   }
 }
 </script>
 
 <style scoped lang="scss">
-  .list-item {
-    display: inline-block;
-    margin-right: 10px;
-  }
-  .list-enter-active, .list-leave-active {
-    transition: all 0.15s;
-  }
-  .list-enter, .list-leave-to {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
 </style>

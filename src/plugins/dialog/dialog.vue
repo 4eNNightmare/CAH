@@ -5,36 +5,69 @@
         <h2 v-if="title" class="dialog-title">
           {{ title }}
         </h2>
-        <div v-if="text" class="dialog-content">
-          {{ text }}
+        <div class="dialog-content">
+          <div ref="content" v-if="content" v-html="content"></div>
         </div>
         <footer class="dialog-actions">
-          <button @click="cancel">CANCEL</button>
-          <button @click="ok">OK</button>
+          <button v-if="cancel" @click="_cancel">{{ cancel.text || 'CANCEL' }}</button>
+          <button @click="_ok">{{ ok ? ok.text : 'OK' }}</button>
         </footer>
       </div>
     </div>
-    <div class="dialog-scrim" @click="dismiss"></div>
+    <div class="dialog-scrim" @click="() => !persistent && _dismiss()"></div>
   </div>
 </template>
 
 <script>
 export default {
-  props: { title: String, text: String },
+  props: {
+    title: String,
+    content: String,
+    persistent: Boolean,
+    data: Array,
+    cancel: [Boolean, Object],
+    ok: Object,
+    validations: Array
+  },
   methods: {
-    ok () {
-      this.$emit('ok')
-      this.dismiss()
+    _getContentData () {
+      return Object.assign({}, ...Array.from(this.$refs.content.children)
+        .filter(child => child.hasAttribute('data-name'))
+        .map(child => {
+          return { [child.getAttribute('data-name')]: child.value }
+        }))
     },
-    cancel () {
+    _validate (data) {
+      const errors = []
+      this.validations.forEach(validation => {
+        if (!validation.rule(data[validation.target])) {
+          errors.push(validation.error)
+        }
+      })
+      return errors
+    },
+    _ok () {
+      const data = this._getContentData()
+      if (this.validations) {
+        let errors = this._validate(data)
+        if (errors.length > 0) {
+          this.$emit('error', errors)
+          return
+        }
+      }
+      this.$emit('ok', data)
+      this._dismiss()
+    },
+    _cancel () {
       this.$emit('cancel')
-      this.dismiss()
+      this._dismiss()
     },
-    dismiss () {
+    _dismiss () {
       this.$refs.dialog.classList.remove('open')
+      this.$emit('dismiss')
       setTimeout(() => this.$destroy(), 250)
     },
-    open () {
+    _open () {
       this.$refs.dialog.classList.add('open')
     }
   },

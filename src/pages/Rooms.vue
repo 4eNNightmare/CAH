@@ -6,7 +6,7 @@
     <button @click="createRoom">
       Create room
     </button>
-    <List :items="this.$store.state.rooms"/>
+    <List :rooms="this.$store.state.rooms"/>
   </div>
 </template>
 
@@ -30,19 +30,31 @@ export default {
     createRoom () {
       this.$dialog({
         title: 'Create room',
-        text: 'Create room'
-      }).onOk(() => {
+        content: 'Name: <input data-name="name"/>',
+        persistent: true,
+        cancel: true,
+        validations: [
+          { target: 'name', rule: v => !!v, error: new Error('"Name" cannot be empty.') }
+        ]
+      }).onOk(data => {
         this.$firebase.db.collection('rooms').doc().set({
+          name: data.name,
+          rules: ['default'],
           owner: this.$firebase.auth.currentUser.uid,
           created: +new Date(),
-          players: []
-        }).then(() => {
-          console.log('Deu certo')
+          players: [this.$firebase.auth.currentUser.uid]
         }).catch(error => {
-          console.error('algo de errado nao está certo', error)
+          this.$dialog({
+            title: 'Error',
+            content: error.message
+          })
+        })
+      }).onCancel(() => console.log('aff')).onError(errors => {
+        this.$dialog({
+          title: 'Error',
+          content: errors.toString()
         })
       })
-        .onCancel(() => console.log('aff'))
     }
   },
   mounted () {
